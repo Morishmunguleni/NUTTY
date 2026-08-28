@@ -1,11 +1,7 @@
 // =============================================================
-// N.U.T.T.Y. CLIENT LOGIC - ANDROID MOBILE OPTIMIZED
+// N.U.T.T.Y. CLIENT LOGIC - GENERATIVE AI & VOICE ASSISTANT
 // =============================================================
 
-// ---- Server URL auto-detection ----
-// When the Capacitor config sets server.url, the WebView loads from that IP directly.
-// All relative fetch('/api/...') calls will automatically go to the same origin.
-// This constant is a safety fallback only used if origin detection fails.
 const PC_SERVER_IP = '192.168.1.189';
 const PC_SERVER_PORT = '3000';
 
@@ -14,15 +10,13 @@ function getServerBase() {
   if (customUrl) return customUrl.replace(/\/+$/, '');
 
   const origin = window.location.origin;
-  // Capacitor live reload or regular browser - use same origin
   if (origin && origin !== 'null' && !origin.startsWith('capacitor://') && !origin.startsWith('file://')) {
-    return ''; // relative paths work fine
+    return '';
   }
-  // Fallback: running from file:// (old capacitor without server.url set)
   return `http://${PC_SERVER_IP}:${PC_SERVER_PORT}`;
 }
 
-const SERVER_BASE = getServerBase();
+let SERVER_BASE = getServerBase();
 
 async function apiFetch(path, options = {}) {
   const url = SERVER_BASE + path;
@@ -31,12 +25,11 @@ async function apiFetch(path, options = {}) {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ---- Platform Detection ----
   const isAndroid = /android/i.test(navigator.userAgent);
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   const isMobile = isAndroid || isIOS || window.innerWidth < 600;
 
-  // ---- State ----
+  // State & History
   let isListening = false;
   let isSpeaking = false;
   let recognition = null;
@@ -45,8 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
   let webcamStream = null;
   let chatBadgeCount = 0;
   let activeTab = 'tab-home';
+  let chatHistory = [];
 
-  // ---- DOM Elements ----
+  // DOM Elements
   const btnOrbMic = document.getElementById('btn-orb-mic');
   const micIcon   = document.getElementById('mic-icon');
   const orbStatus = document.getElementById('orb-status');
@@ -57,6 +51,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectVoice = document.getElementById('select-voice');
   const hudClock   = document.getElementById('hud-clock');
 
+  // AI Brain Settings
+  const btnOpenAiSettings = document.getElementById('btn-open-ai-settings');
+  const aiSettingsModal   = document.getElementById('ai-settings-modal');
+  const closeAiModal      = document.getElementById('close-ai-modal');
+  const inputAiKey        = document.getElementById('input-ai-key');
+  const aiProviderSelect  = document.getElementById('ai-provider-select');
+  const inputServerUrl    = document.getElementById('input-server-url');
+  const btnSaveAiSettings = document.getElementById('btn-save-ai-settings');
+  const btnClearAiKey     = document.getElementById('btn-clear-ai-key');
+  const aiStatusPill      = document.getElementById('ai-status-pill');
+
   // System meters
   const cpuBar   = document.getElementById('cpu-bar');
   const cpuText  = document.getElementById('cpu-text');
@@ -66,14 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const sysOs    = document.getElementById('sys-os');
   const sysUptime = document.getElementById('sys-uptime');
 
-  // Memory & Modals
+  // Memory & Vision
   const memoryList       = document.getElementById('memory-list');
   const btnAddMemory     = document.getElementById('btn-add-memory');
   const memoryModal      = document.getElementById('memory-modal');
   const closeMemoryModal = document.getElementById('close-memory-modal');
   const btnSaveMemory    = document.getElementById('btn-save-memory');
 
-  // Vision Modal
   const btnCamera       = document.getElementById('btn-camera');
   const visionModal     = document.getElementById('vision-modal');
   const closeVisionModal = document.getElementById('close-vision-modal');
@@ -81,101 +85,83 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnSnapAnalyze  = document.getElementById('btn-snap-analyze');
   const visionResults   = document.getElementById('vision-results');
 
-  // Weather
   const weatherTemp = document.getElementById('weather-temp');
   const weatherCond = document.getElementById('weather-cond');
   const weatherHum  = document.getElementById('weather-hum');
   const weatherWind = document.getElementById('weather-wind');
 
-  // Inline mic button (chat tab)
   const btnMicInline    = document.getElementById('btn-mic-inline');
   const micInlineIcon   = document.getElementById('mic-inline-icon');
 
-  // ---- Set Platform Info ----
+  // Init Saved Settings
+  const savedKey = localStorage.getItem('nutty_ai_key');
+  const savedProvider = localStorage.getItem('nutty_ai_provider');
+  const savedUrl = localStorage.getItem('nutty_server_url');
+
+  if (savedKey && inputAiKey) {
+    inputAiKey.value = savedKey;
+    if (aiStatusPill) aiStatusPill.textContent = 'AI ACTIVE';
+  }
+  if (savedProvider && aiProviderSelect) aiProviderSelect.value = savedProvider;
+  if (savedUrl && inputServerUrl) inputServerUrl.value = savedUrl;
+
+  // Platform Setup
   if (isAndroid) {
-    const sysOsEl = document.getElementById('sys-os');
+    if (sysOs) sysOs.textContent = 'Android Device';
     const platEl = document.getElementById('platform-type');
-    const platRow = document.getElementById('platform-row');
-    if (sysOsEl) sysOsEl.textContent = 'Android Device';
-    if (platEl) platEl.textContent = 'Mobile';
-    if (platRow) platRow.querySelector('i').className = 'fa-brands fa-android text-cyan';
-  } else if (isIOS) {
-    const sysOsEl = document.getElementById('sys-os');
-    const platEl = document.getElementById('platform-type');
-    if (sysOsEl) sysOsEl.textContent = 'iOS Device';
     if (platEl) platEl.textContent = 'Mobile';
   }
 
-  // -----------------------------------------------------------
-  // 1. BOTTOM TAB NAVIGATION
-  // -----------------------------------------------------------
-  const navTabs = document.querySelectorAll('.nav-tab');
-  const tabPanels = document.querySelectorAll('.tab-panel');
-
-  navTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      const targetId = tab.getAttribute('data-tab');
-      switchTab(targetId);
-    });
-  });
-
+  // Navigation
   function switchTab(tabId) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+
+    const panel = document.getElementById(tabId);
+    if (panel) panel.classList.add('active');
+
+    const navBtn = document.querySelector(`.nav-tab[data-tab="${tabId}"]`);
+    if (navBtn) navBtn.classList.add('active');
+
     activeTab = tabId;
-
-    // Update panels
-    tabPanels.forEach(p => p.classList.remove('active'));
-    const targetPanel = document.getElementById(tabId);
-    if (targetPanel) targetPanel.classList.add('active');
-
-    // Update nav buttons
-    navTabs.forEach(t => {
-      t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
-    });
-
-    // Clear chat badge when opening chat tab
     if (tabId === 'tab-chat') {
       chatBadgeCount = 0;
       const badge = document.getElementById('chat-badge');
       if (badge) badge.style.display = 'none';
+      if (chatTranscript) chatTranscript.scrollTop = chatTranscript.scrollHeight;
     }
-
-    // Load memories when switching to memory tab
     if (tabId === 'tab-memory') loadMemories();
   }
 
-  // -----------------------------------------------------------
-  // 2. CLOCK & SYSTEM STATS
-  // -----------------------------------------------------------
+  document.querySelectorAll('.nav-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.getAttribute('data-tab');
+      if (tabId) switchTab(tabId);
+    });
+  });
+
+  // Clock
   function updateClock() {
-    const now = new Date();
-    hudClock.textContent = now.toLocaleTimeString();
+    if (hudClock) hudClock.textContent = new Date().toLocaleTimeString();
   }
   setInterval(updateClock, 1000);
   updateClock();
 
+  // Diagnostics
   async function fetchSystemStats() {
     try {
       const res = await apiFetch('/api/system');
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
         const s = data.data;
-        cpuBar.style.width   = `${s.cpuUsage}%`;
-        cpuText.textContent  = `${s.cpuUsage}%`;
-        cpuBadge.textContent = `${s.cpuUsage}% LOAD`;
-
-        ramBar.style.width  = `${s.ramPercent}%`;
-        ramText.textContent = `${s.ramUsedGb} GB / ${s.ramTotalGb} GB`;
-        sysUptime.textContent = s.uptimeFormatted;
-
-        // Only update OS text if not Android/iOS (keep device platform label)
-        if (!isMobile && sysOs) {
-          sysOs.textContent = s.distro || s.platform;
-        }
+        if (cpuBar) cpuBar.style.width = `${s.cpuUsage}%`;
+        if (cpuText) cpuText.textContent = `${s.cpuUsage}%`;
+        if (cpuBadge) cpuBadge.textContent = `${s.cpuUsage}% LOAD`;
+        if (ramBar) ramBar.style.width = `${s.ramPercent}%`;
+        if (ramText) ramText.textContent = `${s.ramUsedGb} GB / ${s.ramTotalGb} GB`;
+        if (sysUptime) sysUptime.textContent = s.uptimeFormatted;
       }
-    } catch (e) {
-      console.warn('System stats offline', e);
-      if (cpuText) cpuText.textContent = 'N/A';
-    }
+    } catch (e) {}
   }
   setInterval(fetchSystemStats, 4000);
   fetchSystemStats();
@@ -184,23 +170,21 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await apiFetch('/api/weather');
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
         const w = data.data;
         if (weatherTemp) weatherTemp.textContent = w.temperature;
         if (weatherCond) weatherCond.textContent = w.condition;
         if (weatherHum)  weatherHum.textContent  = w.humidity;
         if (weatherWind) weatherWind.textContent  = w.windSpeed;
       }
-    } catch (e) { console.warn('Weather offline', e); }
+    } catch (e) {}
   }
   fetchWeather();
 
-  // -----------------------------------------------------------
-  // 3. MEMORY SYSTEM
-  // -----------------------------------------------------------
+  // Memory
   async function loadMemories() {
     if (!memoryList) return;
-    memoryList.innerHTML = `<div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>`;
+    memoryList.innerHTML = `<div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading archives...</div>`;
     try {
       const res  = await apiFetch('/api/memory');
       const data = await res.json();
@@ -237,66 +221,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (btnAddMemory) btnAddMemory.addEventListener('click', () => memoryModal.classList.add('active'));
   if (closeMemoryModal) closeMemoryModal.addEventListener('click', () => memoryModal.classList.remove('active'));
-
-  // Memory quick button from home tab
   const btnMemoryQuick = document.getElementById('btn-memory-quick');
-  if (btnMemoryQuick) btnMemoryQuick.addEventListener('click', () => {
-    switchTab('tab-memory');
-  });
+  if (btnMemoryQuick) btnMemoryQuick.addEventListener('click', () => switchTab('tab-memory'));
 
   if (btnSaveMemory) {
     btnSaveMemory.addEventListener('click', async () => {
       const fact = document.getElementById('mem-input-fact').value.trim();
       const cat  = document.getElementById('mem-input-cat').value.trim() || 'general';
       if (!fact) return;
-
       await apiFetch('/api/memory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fact, category: cat })
       });
-
       document.getElementById('mem-input-fact').value = '';
       memoryModal.classList.remove('active');
-      playBeepSound(600, 0.1);
       loadMemories();
     });
   }
 
-  loadMemories();
-
-  // -----------------------------------------------------------
-  // 4. AUDIO CHIMES
-  // -----------------------------------------------------------
-  function playBeepSound(freq = 440, duration = 0.1, type = 'sine') {
+  // Audio / Chimes
+  function playBeepSound(freq = 440, duration = 0.08) {
     try {
-      if (!currentAudioCtx) currentAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = currentAudioCtx.createOscillator();
-      const gain = currentAudioCtx.createGain();
-      osc.type = type;
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.07, currentAudioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, currentAudioCtx.currentTime + duration);
+      const ctx = currentAudioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      currentAudioCtx = ctx;
+      if (ctx.state === 'suspended') ctx.resume();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.connect(gain);
-      gain.connect(currentAudioCtx.destination);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
       osc.start();
-      osc.stop(currentAudioCtx.currentTime + duration);
+      osc.stop(ctx.currentTime + duration);
     } catch (e) {}
   }
 
-  function playActivateChime() {
-    playBeepSound(520, 0.08, 'triangle');
-    setTimeout(() => playBeepSound(680, 0.12, 'sine'), 80);
-  }
-
-  // -----------------------------------------------------------
-  // 5. TTS - TEXT TO SPEECH
-  // -----------------------------------------------------------
+  // Text-To-Speech
   function initTTS() {
     if (!('speechSynthesis' in window)) return;
     function populateVoices() {
       synthVoices = window.speechSynthesis.getVoices();
-      if (!selectVoice) return;
+      if (!selectVoice || synthVoices.length === 0) return;
       selectVoice.innerHTML = synthVoices.map((v, i) =>
         `<option value="${i}" ${v.lang.startsWith('en') ? 'selected' : ''}>${v.name}</option>`
       ).join('');
@@ -311,7 +278,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function speakText(text) {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+
+    let spoken = text;
+    if (text.length > 200 || text.includes('#') || text.includes('Dear ') || text.includes('Subject:')) {
+      spoken = "I have drafted that for you, Boss. The full document is ready in your console.";
+    }
+
+    spoken = spoken.replace(/[*_#`~]/g, '').replace(/\[(.*?)\]\(.*?\)/g, '$1');
+
+    const utterance = new SpeechSynthesisUtterance(spoken);
     const voiceIdx  = selectVoice ? selectVoice.value : 0;
     if (synthVoices[voiceIdx]) utterance.voice = synthVoices[voiceIdx];
     utterance.pitch = 1.0;
@@ -319,24 +294,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     utterance.onstart = () => {
       isSpeaking = true;
-      btnOrbMic.classList.add('speaking');
-      orbStatus.textContent = 'SPEAKING';
+      if (btnOrbMic) btnOrbMic.classList.add('speaking');
+      if (orbStatus) orbStatus.textContent = 'SPEAKING';
     };
     utterance.onend = () => {
       isSpeaking = false;
-      btnOrbMic.classList.remove('speaking');
-      orbStatus.textContent = isListening ? 'LISTENING' : 'TAP TO SPEAK';
+      if (btnOrbMic) btnOrbMic.classList.remove('speaking');
+      if (orbStatus) orbStatus.textContent = isListening ? 'LISTENING' : 'TAP TO SPEAK';
     };
     window.speechSynthesis.speak(utterance);
   }
 
-  // -----------------------------------------------------------
-  // 6. SPEECH RECOGNITION
-  // -----------------------------------------------------------
+  // Speech Recognition
   function initSpeechRecognition() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {
-      liveSpeechText.textContent = 'Speech recognition not supported. Use Chrome.';
+      if (liveSpeechText) liveSpeechText.textContent = 'Speech recognition not supported in this browser.';
       return;
     }
 
@@ -347,24 +320,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     recognition.onstart = () => {
       isListening = true;
-      btnOrbMic.classList.add('listening');
-      micIcon.className = 'fa-solid fa-microphone';
-      orbStatus.textContent = 'LISTENING';
+      if (btnOrbMic) btnOrbMic.classList.add('listening');
+      if (micIcon) micIcon.className = 'fa-solid fa-microphone';
+      if (orbStatus) orbStatus.textContent = 'LISTENING';
       if (btnMicInline) btnMicInline.classList.add('listening-inline');
-      if (micInlineIcon) micInlineIcon.className = 'fa-solid fa-microphone';
-      playActivateChime();
     };
 
     recognition.onresult = (event) => {
       let interim = '';
       let finalTranscript = '';
-
       for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        } else {
-          interim += event.results[i][0].transcript;
-        }
+        if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
+        else interim += event.results[i][0].transcript;
       }
 
       if (liveSpeechText) liveSpeechText.textContent = finalTranscript || interim || 'Listening...';
@@ -372,214 +339,245 @@ document.addEventListener('DOMContentLoaded', () => {
       if (finalTranscript) {
         const cleanMsg = finalTranscript.trim();
         const lower    = cleanMsg.toLowerCase();
-
         if (lower.includes('hey nutty') || lower.includes('nutty') || isListening) {
-          const query = cleanMsg
-            .replace(/^hey\s+nutty\b/i, '')
-            .replace(/^nutty\b/i, '')
-            .trim() || cleanMsg;
+          const query = cleanMsg.replace(/^hey\s+nutty\b/i, '').replace(/^nutty\b/i, '').trim() || cleanMsg;
           if (query.length > 1) handleUserMessage(query);
         }
       }
     };
 
-    recognition.onerror = (err) => {
-      console.warn('Speech error:', err.error);
-      if (err.error !== 'no-speech') stopListening();
-    };
-
+    recognition.onerror = () => stopListening();
     recognition.onend = () => {
-      if (isListening) {
-        try { recognition.start(); } catch(e) {}
-      } else {
-        stopListening();
-      }
+      if (isListening) { try { recognition.start(); } catch(e) {} }
+      else stopListening();
     };
   }
   initSpeechRecognition();
 
   function startListening() {
-    if (recognition) {
-      try { recognition.start(); } catch(e) { console.warn(e); }
-    }
+    if (recognition) { try { recognition.start(); } catch(e) {} }
   }
 
   function stopListening() {
     isListening = false;
-    btnOrbMic.classList.remove('listening');
-    micIcon.className = 'fa-solid fa-microphone-slash';
-    orbStatus.textContent = 'TAP TO SPEAK';
+    if (btnOrbMic) btnOrbMic.classList.remove('listening');
+    if (micIcon) micIcon.className = 'fa-solid fa-microphone-slash';
+    if (orbStatus) orbStatus.textContent = 'TAP TO SPEAK';
     if (btnMicInline) btnMicInline.classList.remove('listening-inline');
-    if (micInlineIcon) micInlineIcon.className = 'fa-solid fa-microphone';
     if (recognition) { try { recognition.stop(); } catch(e) {} }
   }
 
   function toggleListening() {
-    if (isListening) { stopListening(); } else { startListening(); }
+    if (isListening) stopListening();
+    else startListening();
   }
 
-  btnOrbMic.addEventListener('click', toggleListening);
+  if (btnOrbMic) btnOrbMic.addEventListener('click', toggleListening);
   if (btnMicInline) btnMicInline.addEventListener('click', toggleListening);
 
-  // -----------------------------------------------------------
-  // 7. CHAT & COMMAND HANDLING
-  // -----------------------------------------------------------
-  chatForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = chatInput.value.trim();
-    if (text) {
-      chatInput.value = '';
-      handleUserMessage(text);
-    }
+  // Chat Form
+  if (chatForm) {
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (text) {
+        chatInput.value = '';
+        handleUserMessage(text);
+      }
+    });
+  }
+
+  // Quick Prompt Chips
+  document.querySelectorAll('.prompt-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const prompt = chip.getAttribute('data-prompt');
+      if (prompt) {
+        switchTab('tab-chat');
+        handleUserMessage(prompt);
+      }
+    });
   });
 
+  const btnQuickLetter = document.getElementById('btn-quick-letter');
+  if (btnQuickLetter) btnQuickLetter.addEventListener('click', () => {
+    switchTab('tab-chat');
+    handleUserMessage('Write me a formal business letter');
+  });
+
+  const btnQuickEmail = document.getElementById('btn-quick-email');
+  if (btnQuickEmail) btnQuickEmail.addEventListener('click', () => {
+    switchTab('tab-chat');
+    handleUserMessage('Write a professional email update');
+  });
+
+  // User Message Processing
   async function handleUserMessage(message) {
     playBeepSound(400, 0.05);
     appendChatMessage('user', message);
+    chatHistory.push({ role: 'user', content: message });
 
-    // Switch to chat tab to show response
     if (activeTab !== 'tab-chat') {
       chatBadgeCount++;
       const badge = document.getElementById('chat-badge');
       if (badge) { badge.textContent = '!'; badge.style.display = 'flex'; }
     }
 
-    if (liveSpeechText) liveSpeechText.textContent = `Processing: "${message}"...`;
+    if (liveSpeechText) liveSpeechText.textContent = `Generating: "${message}"...`;
 
     try {
+      const storedKey = localStorage.getItem('nutty_ai_key') || '';
+      const storedProvider = localStorage.getItem('nutty_ai_provider') || 'auto';
+
       const res = await apiFetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, platform: isAndroid ? 'android' : (isIOS ? 'ios' : 'desktop') })
+        body: JSON.stringify({
+          message,
+          contextHistory: chatHistory.slice(-8),
+          platform: isAndroid ? 'android' : 'desktop',
+          apiKey: storedKey,
+          apiProvider: storedProvider
+        })
       });
       const data = await res.json();
 
       if (data.success && data.reply) {
-        appendChatMessage('nutty', data.reply);
+        chatHistory.push({ role: 'assistant', content: data.reply });
+        appendChatMessage('nutty', data.reply, data.source);
         speakText(data.reply);
-        if (liveSpeechText) liveSpeechText.textContent = data.reply;
+        if (liveSpeechText) liveSpeechText.textContent = 'Response ready.';
         if (data.memorySaved) loadMemories();
 
-        // Handle Android URL actions
         if (data.actionTool === 'open_url' && data.target && isMobile) {
-          setTimeout(() => { window.open(data.target, '_blank'); }, 500);
+          setTimeout(() => window.open(data.target, '_blank'), 500);
         }
         if (data.actionTool === 'search_web' && data.searchUrl && isMobile) {
-          setTimeout(() => { window.open(data.searchUrl, '_blank'); }, 500);
+          setTimeout(() => window.open(data.searchUrl, '_blank'), 500);
         }
       } else {
-        appendChatMessage('nutty', 'My communication link experienced a glitch. Please try again.');
+        appendChatMessage('nutty', 'Communication anomaly detected. Please try again.');
       }
     } catch (e) {
-      appendChatMessage('nutty', 'Unable to reach Nutty core server. Make sure the server is running.');
+      appendChatMessage('nutty', 'Could not reach core brain. Verify connection.');
     }
   }
 
-  // Android-aware command sender
-  async function sendQuickCommand(action, target) {
-    playBeepSound(500, 0.05);
-
-    // On Android/mobile, handle URLs directly in browser
-    if (isMobile && action === 'open_url') {
-      let url = target.startsWith('http') ? target : 'https://' + target;
-      window.open(url, '_blank');
-      appendChatMessage('nutty', `Opening ${target} in your browser.`);
-      speakText(`Opening ${target}`);
-      return;
-    }
-    if (isMobile && action === 'search_web') {
-      const url = `https://www.google.com/search?q=${encodeURIComponent(target)}`;
-      window.open(url, '_blank');
-      appendChatMessage('nutty', `Searching the web for "${target}".`);
-      return;
-    }
-
-    try {
-      const res = await apiFetch('/api/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, target, platform: isAndroid ? 'android' : 'desktop' })
-      });
-      const data = await res.json();
-      appendChatMessage('nutty', data.message || `Command sent: ${action} ${target}`);
-      speakText(data.message || `Executing ${target}`);
-    } catch (e) {
-      appendChatMessage('system', `Error: ${e.message}`);
-    }
-  }
-
-  function appendChatMessage(sender, text) {
+  function appendChatMessage(sender, text, source = null) {
     const msgDiv = document.createElement('div');
     msgDiv.className = `chat-msg ${sender}-msg`;
 
     let authorTag  = 'YOU';
     let authorIcon = 'fa-user text-amber';
-    if (sender === 'nutty') { authorTag = 'N.U.T.T.Y.'; authorIcon = 'fa-robot text-cyan'; }
-    else if (sender === 'system') { authorTag = 'SYS'; authorIcon = 'fa-shield-halved'; }
+    let sourceBadge = '';
+
+    if (sender === 'nutty') {
+      authorTag = 'N.U.T.T.Y.';
+      authorIcon = 'fa-robot text-cyan';
+      if (source) sourceBadge = `<span class="source-pill">${escapeHtml(source)}</span>`;
+    } else if (sender === 'system') {
+      authorTag = 'SYS';
+      authorIcon = 'fa-shield-halved';
+    }
+
+    const isDocument = text.includes('\n\n') || text.length > 250 || text.includes('Dear ') || text.includes('Subject:');
+    const copyBtnHtml = sender === 'nutty' && isDocument ? `<button class="copy-bubble-btn" title="Copy Document"><i class="fa-solid fa-copy"></i> Copy</button>` : '';
 
     msgDiv.innerHTML = `
-      <div class="msg-author"><i class="fa-solid ${authorIcon}"></i> ${authorTag}</div>
-      <div class="msg-bubble">${escapeHtml(text)}</div>
+      <div class="msg-header-row">
+        <div class="msg-author"><i class="fa-solid ${authorIcon}"></i> ${authorTag} ${sourceBadge}</div>
+        ${copyBtnHtml}
+      </div>
+      <div class="msg-bubble">${formatMessageText(text)}</div>
     `;
+
+    const copyBtn = msgDiv.querySelector('.copy-bubble-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(text);
+        copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+        setTimeout(() => copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i> Copy', 2000);
+      });
+    }
 
     chatTranscript.appendChild(msgDiv);
     chatTranscript.scrollTop = chatTranscript.scrollHeight;
   }
 
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+  function formatMessageText(text) {
+    let formatted = escapeHtml(text);
+    // Bold **text**
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Bullet lines • or -
+    formatted = formatted.replace(/^[-•]\s+(.*)$/gm, '<span class="bullet-item">• $1</span>');
+    return formatted;
   }
 
-  // -----------------------------------------------------------
-  // 8. QUICK ACTION BUTTONS (Android-aware)
-  // -----------------------------------------------------------
+  function escapeHtml(str) {
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // AI Settings Modal
+  if (btnOpenAiSettings) btnOpenAiSettings.addEventListener('click', () => aiSettingsModal.classList.add('active'));
+  if (closeAiModal) closeAiModal.addEventListener('click', () => aiSettingsModal.classList.remove('active'));
+
+  if (btnSaveAiSettings) {
+    btnSaveAiSettings.addEventListener('click', () => {
+      const key = inputAiKey.value.trim();
+      const provider = aiProviderSelect.value;
+      const customUrl = inputServerUrl.value.trim();
+
+      if (key) localStorage.setItem('nutty_ai_key', key);
+      else localStorage.removeItem('nutty_ai_key');
+
+      localStorage.setItem('nutty_ai_provider', provider);
+
+      if (customUrl) {
+        localStorage.setItem('nutty_server_url', customUrl);
+        SERVER_BASE = customUrl.replace(/\/+$/, '');
+      } else {
+        localStorage.removeItem('nutty_server_url');
+        SERVER_BASE = getServerBase();
+      }
+
+      if (aiStatusPill) aiStatusPill.textContent = key ? 'AI ACTIVE' : 'AI BRAIN';
+      aiSettingsModal.classList.remove('active');
+      appendChatMessage('system', key ? 'AI Brain configured successfully! You can now ask me anything like ChatGPT.' : 'Settings updated.');
+    });
+  }
+
+  if (btnClearAiKey) {
+    btnClearAiKey.addEventListener('click', () => {
+      inputAiKey.value = '';
+      localStorage.removeItem('nutty_ai_key');
+      if (aiStatusPill) aiStatusPill.textContent = 'AI BRAIN';
+    });
+  }
+
+  // Quick Action Buttons
   function wireQuickBtn(id, fn) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', fn);
   }
 
-  wireQuickBtn('btn-browser', () => {
-    if (isMobile) { window.open('https://www.google.com', '_blank'); }
-    else { sendQuickCommand('open_app', 'browser'); }
-  });
-
+  wireQuickBtn('btn-browser', () => window.open('https://www.google.com', '_blank'));
   wireQuickBtn('btn-youtube', () => {
     window.open('https://www.youtube.com', '_blank');
-    appendChatMessage('nutty', 'Opening YouTube for you.');
-    speakText('Opening YouTube');
+    appendChatMessage('nutty', 'Opening YouTube.');
   });
-
-  wireQuickBtn('btn-maps', () => {
-    window.open('https://maps.google.com', '_blank');
-    appendChatMessage('nutty', 'Opening Google Maps.');
-    speakText('Opening Google Maps');
-  });
-
-  wireQuickBtn('btn-github', () => {
-    window.open('https://github.com', '_blank');
-    appendChatMessage('nutty', 'Accessing GitHub network.');
-    speakText('Opening GitHub');
-  });
-
   wireQuickBtn('btn-camera', () => {
     visionModal.classList.add('active');
     openCamera();
   });
 
-  // -----------------------------------------------------------
-  // 9. OPTICAL VISION MODAL
-  // -----------------------------------------------------------
+  // Camera Vision
   async function openCamera() {
     try {
       webcamStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: isAndroid ? 'environment' : 'user' }
       });
-      webcamFeed.srcObject = webcamStream;
+      if (webcamFeed) webcamFeed.srcObject = webcamStream;
     } catch (err) {
-      if (visionResults) visionResults.textContent = 'Camera access denied. Please allow camera permission.';
+      if (visionResults) visionResults.textContent = 'Camera permission denied or camera not found.';
     }
   }
 
@@ -594,7 +592,6 @@ document.addEventListener('DOMContentLoaded', () => {
     btnSnapAnalyze.addEventListener('click', async () => {
       playBeepSound(700, 0.1);
       if (visionResults) visionResults.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Scanning frame...';
-
       const canvas = document.getElementById('snapshot-canvas');
       canvas.width  = webcamFeed.videoWidth  || 640;
       canvas.height = webcamFeed.videoHeight || 480;
@@ -608,139 +605,50 @@ document.addEventListener('DOMContentLoaded', () => {
           body: JSON.stringify({ image: dataUrl })
         });
         const data = await res.json();
-        if (data.success) {
+        if (data.success && data.analysis) {
           if (visionResults) visionResults.textContent = data.analysis;
           appendChatMessage('nutty', `[OPTICAL SCAN]: ${data.analysis}`);
           speakText(data.analysis);
         }
       } catch (e) {
-        if (visionResults) visionResults.textContent = 'Vision server offline.';
+        if (visionResults) visionResults.textContent = 'Vision scan server offline.';
       }
     });
   }
 
-  // -----------------------------------------------------------
-  // 10. ARC REACTOR CANVAS VISUALIZER
-  // -----------------------------------------------------------
+  // Visualizer
   function initCanvasVisualizer() {
     const canvas = document.getElementById('arcVisualizer');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-
-    // Match canvas size to container
-    function resizeCanvas() {
-      const container = canvas.parentElement;
-      const size = Math.min(container.offsetWidth, container.offsetHeight);
-      canvas.width  = size;
-      canvas.height = size;
-    }
-    resizeCanvas();
-
+    const container = canvas.parentElement;
+    const size = Math.min(container.offsetWidth, container.offsetHeight);
+    canvas.width  = size;
+    canvas.height = size;
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     let angle = 0;
 
-    const numParticles = isMobile ? 25 : 40;
-    const particles = [];
-    for (let i = 0; i < numParticles; i++) {
-      const maxR = canvas.width * 0.42;
-      const minR = canvas.width * 0.22;
-      particles.push({
-        r:     minR + Math.random() * (maxR - minR),
-        theta: Math.random() * Math.PI * 2,
-        speed: (Math.random() * 0.02) + 0.004,
-        size:  Math.random() * 2.5 + 0.8,
-        color: Math.random() > 0.3 ? '#00f3ff' : '#a855f7'
-      });
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      angle += 0.02;
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, canvas.width * 0.44, angle, angle + Math.PI * 1.5);
+      ctx.strokeStyle = 'rgba(0, 243, 255, 0.6)';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, canvas.width * 0.38, -angle * 1.5, -angle * 1.5 + Math.PI);
+      ctx.strokeStyle = 'rgba(255, 183, 0, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      requestAnimationFrame(draw);
     }
-
-    function render() {
-      const W = canvas.width;
-      const H = canvas.height;
-      const cx = W / 2;
-      const cy = H / 2;
-
-      ctx.clearRect(0, 0, W, H);
-
-      const pulseFactor = isSpeaking
-        ? (Math.sin(Date.now() * 0.01) * 12 + 8)
-        : (isListening ? (Math.sin(Date.now() * 0.008) * 7 + 4) : 0);
-
-      angle += 0.01;
-      const baseRadius = W * 0.35 + pulseFactor;
-
-      ctx.save();
-      ctx.translate(cx, cy);
-
-      // Rotating node dots
-      for (let i = 0; i < 12; i++) {
-        const rad = angle + (i * Math.PI / 6);
-        const x = Math.cos(rad) * baseRadius;
-        const y = Math.sin(rad) * baseRadius;
-        ctx.beginPath();
-        ctx.arc(x, y, isSpeaking ? 3.5 : 2, 0, Math.PI * 2);
-        ctx.fillStyle = isListening ? '#ffb700' : (isSpeaking ? '#a855f7' : '#00f3ff');
-        ctx.shadowBlur  = 10;
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.fill();
-      }
-
-      // Particles
-      particles.forEach(p => {
-        p.theta += p.speed;
-        const px = Math.cos(p.theta) * (p.r + pulseFactor * 0.4);
-        const py = Math.sin(p.theta) * (p.r + pulseFactor * 0.4);
-        ctx.beginPath();
-        ctx.arc(px, py, p.size, 0, Math.PI * 2);
-        ctx.fillStyle   = p.color;
-        ctx.shadowBlur  = 5;
-        ctx.shadowColor = p.color;
-        ctx.fill();
-      });
-
-      ctx.restore();
-      requestAnimationFrame(render);
-    }
-    render();
+    draw();
   }
   initCanvasVisualizer();
 
-  // -----------------------------------------------------------
-  // 11. MODAL CLOSE ON BACKDROP TAP
-  // -----------------------------------------------------------
-  document.querySelectorAll('.hud-modal').forEach(modal => {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.classList.remove('active');
-        if (modal.id === 'vision-modal' && webcamStream) {
-          webcamStream.getTracks().forEach(t => t.stop());
-        }
-      }
-    });
-  });
-
-  // -----------------------------------------------------------
-  // 12. SWIPE GESTURE BETWEEN TABS (Mobile)
-  // -----------------------------------------------------------
-  if (isMobile) {
-    const tabOrder = ['tab-home', 'tab-chat', 'tab-system', 'tab-memory'];
-    let touchStartX = 0;
-
-    document.addEventListener('touchstart', (e) => {
-      touchStartX = e.touches[0].clientX;
-    }, { passive: true });
-
-    document.addEventListener('touchend', (e) => {
-      const diff = touchStartX - e.changedTouches[0].clientX;
-      if (Math.abs(diff) < 60) return;
-      const currentIdx = tabOrder.indexOf(activeTab);
-      if (diff > 0 && currentIdx < tabOrder.length - 1) {
-        switchTab(tabOrder[currentIdx + 1]);
-      } else if (diff < 0 && currentIdx > 0) {
-        switchTab(tabOrder[currentIdx - 1]);
-      }
-    }, { passive: true });
-  }
-
 });
-

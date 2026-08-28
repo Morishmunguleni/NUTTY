@@ -35,10 +35,14 @@
         </div>
         <div class="brand-text">
           <h1>N.U.T.T.Y.</h1>
-          <span class="sub-tag">NEURAL AI // V2.6</span>
+          <span class="sub-tag">NEURAL AI // V2.0</span>
         </div>
       </div>
       <div class="top-status-bar">
+        <button class="ai-key-btn" id="btn-open-ai-settings" title="Connect Free AI Brain Key">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber"></i>
+          <span id="ai-status-pill">AI BRAIN</span>
+        </button>
         <div class="status-indicator active">
           <span class="dot"></span>
           <span class="label">ONLINE</span>
@@ -75,12 +79,24 @@
           <div class="wakeword-indicator" id="wakeword-box">
             <i class="fa-solid fa-ear-listen"></i> Say <strong class="glow-text">"Hey Nutty"</strong> or tap mic
           </div>
-          <div class="live-transcript" id="live-speech-text">Tap the orb above to start listening...</div>
+          <div class="live-transcript" id="live-speech-text">Say "Write me a letter to..." or tap mic...</div>
         </div>
 
         <!-- ANDROID QUICK ACTIONS -->
         <div class="section-title"><i class="fa-solid fa-bolt text-cyan"></i> QUICK ACTIONS</div>
         <div class="quick-tools-grid">
+          <button class="quick-tile" id="btn-quick-letter">
+            <i class="fa-solid fa-pen-nib text-amber"></i>
+            <span>Write Letter</span>
+          </button>
+          <button class="quick-tile" id="btn-quick-email">
+            <i class="fa-solid fa-envelope text-cyan"></i>
+            <span>Draft Email</span>
+          </button>
+          <button class="quick-tile" id="btn-camera">
+            <i class="fa-solid fa-eye text-cyan"></i>
+            <span>Vision</span>
+          </button>
           <button class="quick-tile" id="btn-browser">
             <i class="fa-solid fa-globe text-cyan"></i>
             <span>Browser</span>
@@ -88,18 +104,6 @@
           <button class="quick-tile" id="btn-youtube">
             <i class="fa-brands fa-youtube text-red"></i>
             <span>YouTube</span>
-          </button>
-          <button class="quick-tile" id="btn-maps">
-            <i class="fa-solid fa-map-location-dot text-amber"></i>
-            <span>Maps</span>
-          </button>
-          <button class="quick-tile" id="btn-camera">
-            <i class="fa-solid fa-eye text-cyan"></i>
-            <span>Vision</span>
-          </button>
-          <button class="quick-tile" id="btn-github">
-            <i class="fa-brands fa-github text-purple"></i>
-            <span>GitHub</span>
           </button>
           <button class="quick-tile" id="btn-memory-quick">
             <i class="fa-solid fa-brain text-purple"></i>
@@ -113,7 +117,7 @@
       <section class="tab-panel" id="tab-chat">
         <div class="card glass-card terminal-card">
           <div class="card-header">
-            <h3><i class="fa-solid fa-terminal text-cyan"></i> CONSOLE &amp; LOGS</h3>
+            <h3><i class="fa-solid fa-terminal text-cyan"></i> CONSOLE &amp; AI WRITER</h3>
             <div class="voice-toggle-group">
               <label for="select-voice"><i class="fa-solid fa-volume-high"></i></label>
               <select id="select-voice" class="hud-select"></select>
@@ -124,8 +128,16 @@
           <div class="card-body chat-transcript" id="chat-transcript">
             <div class="chat-msg system-msg">
               <div class="msg-author"><i class="fa-solid fa-shield-halved"></i> SYSTEM</div>
-              <div class="msg-bubble">N.U.T.T.Y. Online. Say "Hey Nutty, open YouTube", "search for...", or ask me anything. I can remember facts, check system status, and browse the web for you.</div>
+              <div class="msg-bubble">N.U.T.T.Y. AI Online. Ask me to <strong>write a letter</strong>, <strong>draft an email</strong>, <strong>write code</strong>, or answer any question just like ChatGPT.</div>
             </div>
+          </div>
+
+          <!-- QUICK PROMPT CHIPS -->
+          <div class="prompt-chips-bar">
+            <button class="prompt-chip" data-prompt="Write a formal letter of resignation"><i class="fa-solid fa-pen-nib"></i> Resignation Letter</button>
+            <button class="prompt-chip" data-prompt="Write a professional leave application"><i class="fa-solid fa-calendar-minus"></i> Leave Request</button>
+            <button class="prompt-chip" data-prompt="Write a professional business proposal"><i class="fa-solid fa-briefcase"></i> Proposal</button>
+            <button class="prompt-chip" data-prompt="Write a professional follow-up email"><i class="fa-solid fa-envelope"></i> Follow-up Email</button>
           </div>
 
           <!-- INPUT FORM -->
@@ -134,7 +146,7 @@
               <button type="button" class="mic-inline-btn" id="btn-mic-inline" title="Voice Input">
                 <i class="fa-solid fa-microphone" id="mic-inline-icon"></i>
               </button>
-              <input type="text" id="chat-input" placeholder="Type a command or question..." autocomplete="off">
+              <input type="text" id="chat-input" placeholder="Ask Nutty to write a letter, email, or question..." autocomplete="off">
               <button type="submit" class="send-btn" id="btn-send"><i class="fa-solid fa-paper-plane"></i></button>
             </form>
           </div>
@@ -143,16 +155,12 @@
 
       <!-- TAB: SYSTEM DIAGNOSTICS -->
       <section class="tab-panel" id="tab-system">
-
-        <!-- DEVICE INFO CARD -->
         <div class="card glass-card system-widget">
           <div class="card-header">
             <h3><i class="fa-solid fa-microchip text-cyan"></i> DEVICE DIAGNOSTICS</h3>
             <span class="badge cyan-badge" id="cpu-badge">-- LOAD</span>
           </div>
           <div class="card-body">
-
-            <!-- Platform Indicator -->
             <div class="platform-row" id="platform-row">
               <i class="fa-brands fa-android text-cyan"></i>
               <span id="sys-os">Android Device</span>
@@ -186,7 +194,6 @@
           </div>
         </div>
 
-        <!-- ENVIRONMENTAL WIDGET -->
         <div class="card glass-card weather-widget">
           <div class="card-header">
             <h3><i class="fa-solid fa-cloud-sun text-amber"></i> ENVIRONMENTAL</h3>
@@ -204,14 +211,13 @@
             </div>
           </div>
         </div>
-
       </section>
 
       <!-- TAB: MEMORY ARCHIVE -->
       <section class="tab-panel" id="tab-memory">
         <div class="card glass-card memory-widget full-height-card">
           <div class="card-header">
-            <h3><i class="fa-solid fa-memory text-purple"></i> LONG-TERM MEMORY</h3>
+            <h3><i class="fa-solid fa-brain text-purple"></i> LONG-TERM MEMORY</h3>
             <button class="icon-btn" id="btn-add-memory" title="Add Memory"><i class="fa-solid fa-plus"></i></button>
           </div>
           <div class="card-body memory-list-container" id="memory-list">
@@ -243,6 +249,48 @@
       </button>
     </nav>
 
+  </div>
+
+  <!-- AI BRAIN SETTINGS MODAL -->
+  <div class="hud-modal" id="ai-settings-modal">
+    <div class="modal-content glass-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-wand-magic-sparkles text-amber"></i> AI BRAIN CONFIGURATION</h3>
+        <button class="close-btn" id="close-ai-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem;">
+          Connect a free <strong>Google Gemini API Key</strong> or <strong>Groq Key</strong> to give Nutty full ChatGPT-level intelligence for writing letters, emails, code, and answering complex questions.
+        </p>
+
+        <div class="form-group">
+          <label>AI Provider:</label>
+          <select id="ai-provider-select" class="hud-input">
+            <option value="auto">Auto-Detect</option>
+            <option value="gemini">Google Gemini (Recommended - Free)</option>
+            <option value="groq">Groq Llama 3.3 (Ultra Fast - Free)</option>
+            <option value="openai">OpenAI ChatGPT</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>API Key:</label>
+          <input type="password" id="input-ai-key" class="hud-input" placeholder="Paste your API key here...">
+          <small style="color:var(--cyan-primary);display:block;margin-top:0.4rem;font-size:0.75rem;">
+            👉 Get a 100% Free Gemini Key at: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--amber-glow);text-decoration:underline;">aistudio.google.com</a>
+          </small>
+        </div>
+
+        <div class="form-group" style="margin-top:1rem;">
+          <label>Custom Cloud Server URL (Optional):</label>
+          <input type="text" id="input-server-url" class="hud-input" placeholder="https://your-nutty-app.onrender.com">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="hud-btn" id="btn-clear-ai-key" style="background:rgba(255,255,255,0.05);">Clear</button>
+        <button class="hud-btn primary-btn" id="btn-save-ai-settings">Save &amp; Activate</button>
+      </div>
+    </div>
   </div>
 
   <!-- OPTICAL VISION MODAL -->

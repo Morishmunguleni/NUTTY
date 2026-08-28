@@ -1085,3 +1085,92 @@ body.sci-fi-theme {
     max-height: 90vh;
   }
 }
+
+/* AI BRAIN SETTINGS BUTTON & MODAL */
+.ai-key-btn {
+  background: rgba(255, 183, 0, 0.15);
+  border: 1px solid rgba(255, 183, 0, 0.4);
+  color: #fff;
+  border-radius: 20px;
+  padding: 0.25rem 0.65rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.ai-key-btn:hover {
+  background: rgba(255, 183, 0, 0.3);
+  box-shadow: 0 0 10px rgba(255, 183, 0, 0.5);
+}
+
+.prompt-chips-bar {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: rgba(4, 8, 18, 0.6);
+  border-top: 1px solid rgba(0, 243, 255, 0.1);
+}
+.prompt-chips-bar::-webkit-scrollbar { display: none; }
+
+.prompt-chip {
+  background: rgba(0, 243, 255, 0.08);
+  border: 1px solid rgba(0, 243, 255, 0.2);
+  color: var(--text-main);
+  border-radius: 15px;
+  padding: 0.25rem 0.65rem;
+  font-size: 0.74rem;
+  font-family: var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: all 0.2s ease;
+}
+.prompt-chip:hover {
+  background: rgba(0, 243, 255, 0.2);
+  border-color: var(--cyan-primary);
+  color: #fff;
+}
+
+.msg-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.2rem;
+}
+
+.source-pill {
+  background: rgba(0, 243, 255, 0.15);
+  color: var(--cyan-primary);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.58rem;
+  margin-left: 0.4rem;
+}
+
+.copy-bubble-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-muted);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.copy-bubble-btn:hover {
+  background: var(--cyan-primary);
+  color: #000;
+}
+
+.bullet-item {
+  display: block;
+  margin: 0.2rem 0;
+  padding-left: 0.5rem;
+}
