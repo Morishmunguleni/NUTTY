@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#070a14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>N.U.T.T.Y. // Tactical Personal AI Assistant</title>
+  
+  <!-- Modern Sci-Fi Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="sci-fi-theme">
+
+  <div class="hud-grid-overlay"></div>
+  <div class="scanline-overlay"></div>
+
+  <!-- MAIN APP CONTAINER -->
+  <div class="app-container">
+
+    <!-- TOP STATUS BAR -->
+    <header class="hud-header">
+      <div class="brand-title">
+        <div class="logo-icon">
+          <i class="fa-solid fa-brain glow-pulse"></i>
+        </div>
+        <div class="brand-text">
+          <h1>N.U.T.T.Y.</h1>
+          <span class="sub-tag">NEURAL AI // V2.6</span>
+        </div>
+      </div>
+      <div class="top-status-bar">
+        <div class="status-indicator active">
+          <span class="dot"></span>
+          <span class="label">ONLINE</span>
+        </div>
+        <div class="clock-display" id="hud-clock">00:00:00</div>
+      </div>
+    </header>
+
+    <!-- SCROLLABLE MAIN CONTENT -->
+    <main class="hud-main-content" id="main-content">
+
+      <!-- TAB: HOME / VOICE COMMAND CENTER -->
+      <section class="tab-panel active" id="tab-home">
+
+        <!-- ARC REACTOR VISUALIZER -->
+        <div class="arc-reactor-container">
+          <div class="hud-ring outer-ring"></div>
+          <div class="hud-ring middle-ring"></div>
+          <div class="hud-ring inner-ring"></div>
+          <canvas id="arcVisualizer" width="300" height="300"></canvas>
+
+          <!-- Central Mic Orb -->
+          <button class="core-orb-btn" id="btn-orb-mic" title="Activate Nutty Voice Listening">
+            <div class="orb-pulse-layer"></div>
+            <div class="orb-icon">
+              <i class="fa-solid fa-microphone-slash" id="mic-icon"></i>
+            </div>
+            <span class="orb-status-text" id="orb-status">TAP TO SPEAK</span>
+          </button>
+        </div>
+
+        <!-- SPEECH FEEDBACK -->
+        <div class="speech-status-banner">
+          <div class="wakeword-indicator" id="wakeword-box">
+            <i class="fa-solid fa-ear-listen"></i> Say <strong class="glow-text">"Hey Nutty"</strong> or tap mic
+          </div>
+          <div class="live-transcript" id="live-speech-text">Tap the orb above to start listening...</div>
+        </div>
+
+        <!-- ANDROID QUICK ACTIONS -->
+        <div class="section-title"><i class="fa-solid fa-bolt text-cyan"></i> QUICK ACTIONS</div>
+        <div class="quick-tools-grid">
+          <button class="quick-tile" id="btn-browser">
+            <i class="fa-solid fa-globe text-cyan"></i>
+            <span>Browser</span>
+          </button>
+          <button class="quick-tile" id="btn-youtube">
+            <i class="fa-brands fa-youtube text-red"></i>
+            <span>YouTube</span>
+          </button>
+          <button class="quick-tile" id="btn-maps">
+            <i class="fa-solid fa-map-location-dot text-amber"></i>
+            <span>Maps</span>
+          </button>
+          <button class="quick-tile" id="btn-camera">
+            <i class="fa-solid fa-eye text-cyan"></i>
+            <span>Vision</span>
+          </button>
+          <button class="quick-tile" id="btn-github">
+            <i class="fa-brands fa-github text-purple"></i>
+            <span>GitHub</span>
+          </button>
+          <button class="quick-tile" id="btn-memory-quick">
+            <i class="fa-solid fa-brain text-purple"></i>
+            <span>Memory</span>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- TAB: CHAT CONSOLE -->
+      <section class="tab-panel" id="tab-chat">
+        <div class="card glass-card terminal-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-terminal text-cyan"></i> CONSOLE &amp; LOGS</h3>
+            <div class="voice-toggle-group">
+              <label for="select-voice"><i class="fa-solid fa-volume-high"></i></label>
+              <select id="select-voice" class="hud-select"></select>
+            </div>
+          </div>
+
+          <!-- CHAT TRANSCRIPT CONSOLE -->
+          <div class="card-body chat-transcript" id="chat-transcript">
+            <div class="chat-msg system-msg">
+              <div class="msg-author"><i class="fa-solid fa-shield-halved"></i> SYSTEM</div>
+              <div class="msg-bubble">N.U.T.T.Y. Online. Say "Hey Nutty, open YouTube", "search for...", or ask me anything. I can remember facts, check system status, and browse the web for you.</div>
+            </div>
+          </div>
+
+          <!-- INPUT FORM -->
+          <div class="card-footer chat-input-area">
+            <form id="chat-form">
+              <button type="button" class="mic-inline-btn" id="btn-mic-inline" title="Voice Input">
+                <i class="fa-solid fa-microphone" id="mic-inline-icon"></i>
+              </button>
+              <input type="text" id="chat-input" placeholder="Type a command or question..." autocomplete="off">
+              <button type="submit" class="send-btn" id="btn-send"><i class="fa-solid fa-paper-plane"></i></button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: SYSTEM DIAGNOSTICS -->
+      <section class="tab-panel" id="tab-system">
+
+        <!-- DEVICE INFO CARD -->
+        <div class="card glass-card system-widget">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-microchip text-cyan"></i> DEVICE DIAGNOSTICS</h3>
+            <span class="badge cyan-badge" id="cpu-badge">-- LOAD</span>
+          </div>
+          <div class="card-body">
+
+            <!-- Platform Indicator -->
+            <div class="platform-row" id="platform-row">
+              <i class="fa-brands fa-android text-cyan"></i>
+              <span id="sys-os">Android Device</span>
+              <span class="sys-pill-inline" id="platform-type">Mobile</span>
+            </div>
+
+            <div class="meter-group">
+              <div class="meter-label">
+                <span>SERVER CPU LOAD</span>
+                <span id="cpu-text">--</span>
+              </div>
+              <div class="meter-bar">
+                <div class="meter-fill cyan-fill" id="cpu-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="meter-group">
+              <div class="meter-label">
+                <span>SERVER RAM</span>
+                <span id="ram-text">-- GB / -- GB</span>
+              </div>
+              <div class="meter-bar">
+                <div class="meter-fill purple-fill" id="ram-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="sys-info-pills">
+              <div class="sys-pill"><i class="fa-solid fa-clock-rotate-left"></i> <span id="sys-uptime">--</span></div>
+              <div class="sys-pill" id="net-status"><i class="fa-solid fa-wifi"></i> Connected</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ENVIRONMENTAL WIDGET -->
+        <div class="card glass-card weather-widget">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-cloud-sun text-amber"></i> ENVIRONMENTAL</h3>
+          </div>
+          <div class="card-body weather-body-mobile">
+            <div class="weather-top-row">
+              <span class="temp-val" id="weather-temp">24°C</span>
+              <div class="weather-cond-block">
+                <div class="weather-cond" id="weather-cond">Clear Sky</div>
+                <div class="weather-details-inline">
+                  <span><i class="fa-solid fa-droplet"></i> <span id="weather-hum">52%</span></span>
+                  <span><i class="fa-solid fa-wind"></i> <span id="weather-wind">12 km/h</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TAB: MEMORY ARCHIVE -->
+      <section class="tab-panel" id="tab-memory">
+        <div class="card glass-card memory-widget full-height-card">
+          <div class="card-header">
+            <h3><i class="fa-solid fa-memory text-purple"></i> LONG-TERM MEMORY</h3>
+            <button class="icon-btn" id="btn-add-memory" title="Add Memory"><i class="fa-solid fa-plus"></i></button>
+          </div>
+          <div class="card-body memory-list-container" id="memory-list">
+            <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading archives...</div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM TAB NAVIGATION -->
+    <nav class="bottom-nav">
+      <button class="nav-tab active" data-tab="tab-home" id="nav-home">
+        <i class="fa-solid fa-house-signal"></i>
+        <span>HOME</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-chat" id="nav-chat">
+        <i class="fa-solid fa-terminal"></i>
+        <span>CONSOLE</span>
+        <span class="nav-badge" id="chat-badge" style="display:none">!</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-system" id="nav-system">
+        <i class="fa-solid fa-microchip"></i>
+        <span>SYSTEM</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-memory" id="nav-memory">
+        <i class="fa-solid fa-brain"></i>
+        <span>MEMORY</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- OPTICAL VISION MODAL -->
+  <div class="hud-modal" id="vision-modal">
+    <div class="modal-content glass-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-camera text-cyan"></i> OPTICAL SCANNER</h3>
+        <button class="close-btn" id="close-vision-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="camera-feed-container">
+          <video id="webcam-feed" autoplay playsinline></video>
+          <canvas id="snapshot-canvas" style="display: none;"></canvas>
+          <div class="camera-hud-overlay">
+            <div class="reticle top-left"></div>
+            <div class="reticle top-right"></div>
+            <div class="reticle bottom-left"></div>
+            <div class="reticle bottom-right"></div>
+            <div class="scan-line"></div>
+          </div>
+        </div>
+        <div class="vision-results-box" id="vision-results">
+          Press "Analyze Frame" to scan.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="hud-btn primary-btn" id="btn-snap-analyze"><i class="fa-solid fa-wand-magic-sparkles"></i> Analyze Frame</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD MEMORY MODAL -->
+  <div class="hud-modal" id="memory-modal">
+    <div class="modal-content glass-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-brain text-purple"></i> ADD MEMORY</h3>
+        <button class="close-btn" id="close-memory-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Memory Fact / Detail:</label>
+          <textarea id="mem-input-fact" rows="3" placeholder="e.g. My project uses Supabase for the backend..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Category:</label>
+          <input type="text" id="mem-input-cat" placeholder="e.g. projects, personal, preferences">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="hud-btn primary-btn" id="btn-save-memory">Save Memory</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

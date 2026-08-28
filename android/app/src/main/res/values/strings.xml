@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Nutty AI Assistant</string>
+    <string name="title_activity_main">Nutty AI Assistant</string>
+    <string name="package_name">com.nutty.assistant</string>
+    <string name="custom_url_scheme">com.nutty.assistant</string>
+</resources>

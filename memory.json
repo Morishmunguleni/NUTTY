@@ -1,0 +1,40 @@
+{
+  "memories": [
+    {
+      "id": "mem_1786884180582",
+      "key": "user_note",
+      "fact": "my Nutty app uses Node and Express",
+      "category": "user_fact",
+      "createdAt": "2026-08-16T12:43:00.582Z"
+    },
+    {
+      "id": "mem_1",
+      "key": "user_name",
+      "fact": "My creator and operator is Boss.",
+      "category": "personal",
+      "createdAt": "2026-08-16T15:40:00.000Z"
+    },
+    {
+      "id": "mem_2",
+      "key": "tech_stack",
+      "fact": "My core tech stack includes Flutter, Supabase, Node.js, Express, and Web APIs.",
+      "category": "projects",
+      "createdAt": "2026-08-16T15:40:00.000Z"
+    }
+  ],
+  "notes": [
+    {
+      "id": "note_1",
+      "title": "Welcome to Nutty",
+      "content": "Nutty is online and standing by for your voice or text commands.",
+      "createdAt": "2026-08-16T15:40:00.000Z"
+    }
+  ],
+  "settings": {
+    "wakeWord": "hey nutty",
+    "voicePitch": 1,
+    "voiceRate": 1,
+    "voiceName": "",
+    "soundEffects": true
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "nutty-ai-assistant",
+  "version": "1.0.0",
+  "description": "Nutty - Full Stack Personal AI Assistant",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "ai",
+    "assistant",
+    "jarvis",
+    "nutty",
+    "fullstack",
+    "voice",
+    "hud"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "systeminformation": "^5.22.6"
+  }
+}
